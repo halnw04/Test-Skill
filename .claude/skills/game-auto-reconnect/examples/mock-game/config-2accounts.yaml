@@ -1,0 +1,73 @@
+# config เกมจำลอง แบบ 2 ไอดี + ช่อง ID/PASSWORD วาดในเกม (เหมือน Yulgang)
+# ตั้งรหัสก่อนรัน (Windows):
+#   set YG_USER1=test1& set YG_PASS1=1111& set YG_USER2=test2& set YG_PASS2=2222
+# รัน 2 ไอดีพร้อมกัน:  python ../../scripts/reconnect_bot.py run-all -c config-2accounts.yaml
+
+game_url: "file:///C:/Test-Skill/.claude/skills/game-auto-reconnect/examples/mock-game/index.html?canvaslogin=1&dc=30"
+
+browser:
+  mode: launch
+  channel: chrome
+  profile_dir: chrome-profile      # จะกลายเป็น chrome-profile-1, chrome-profile-2
+  viewport: {width: 1280, height: 800}
+
+templates_dir: templates
+match_threshold: 0.85
+color_tolerance: 20
+check_interval: 5
+stagger_seconds: 10                 # เปิดไอดีถัดไปห่างกัน 10 วินาที
+
+accounts:
+  - name: ID1
+    user: "${YG_USER1}"
+    pass: "${YG_PASS1}"
+    char_image: char_blade.png
+    window: {x: 0, y: 0}            # หน้าต่างซ้าย
+  - name: ID2
+    user: "${YG_USER2}"
+    pass: "${YG_PASS2}"
+    char_image: char_monk.png
+    window: {x: 680, y: 0}          # หน้าต่างขวา
+
+disconnect_when:
+  - image: disconnected.png
+  - image: label_id.png             # เห็นหน้าล็อกอิน = ไม่ได้อยู่ในเกม
+
+healthy_when:
+  - image: auto_on_label.png
+unhealthy_after: 2
+
+recovery_steps:
+  - name: โหลดหน้าเกมใหม่
+    goto: game_url
+  - name: คลิกช่อง ID
+    click_image: label_id.png
+    offset: [0, 42]                 # ช่องกรอกอยู่ใต้คำว่า ID 42 พิกเซล
+  - name: พิมพ์ ID
+    type: "{{user}}"
+  - name: คลิกช่อง PASSWORD
+    click_image: label_password.png
+    offset: [0, 42]
+  - name: พิมพ์รหัสผ่าน
+    type: "{{pass}}"
+  - name: กดเข้าสู่ระบบ
+    click_image: btn_login.png
+  - name: เลือกเซิร์ฟ
+    click_image: server1.png
+  - name: เลือกตัวละครของไอดีนี้
+    click_image: "{{char_image}}"
+  - name: กดเริ่มเกม
+    click_image: btn_start.png
+    after: 3
+  - name: เปิดบอท AUTO
+    click_image: btn_auto_off.png
+    skip_if_image: auto_on_label.png
+  - name: ยืนยันว่าบอททำงาน
+    wait_image: auto_on_label.png
+
+limits:
+  max_attempts_in_a_row: 5
+  retry_wait: 30
+  max_recoveries_per_hour: 10
+
+log_file: reconnect.log             # จะกลายเป็น reconnect-1.log, reconnect-2.log

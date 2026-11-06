@@ -8,6 +8,7 @@
 | `excel-auto-report` | ทำรายงาน Excel อัตโนมัติ มีกราฟและบทวิเคราะห์ | "ทำรายงานยอดขายจาก sales.xlsx" |
 | `thai-time-weather` | บอกเวลาไทย (พ.ศ.) และอากาศพร้อมพยากรณ์ 3 วัน | "อากาศเชียงใหม่วันนี้เป็นไง" |
 | `claude-best-practice-th` | คู่มือใช้ Claude Code ภาษาไทย และเช็กลิสต์สร้างสกิล | "สร้างสกิลยังไงให้ดี" |
+| `game-auto-reconnect` | เฝ้าเกมบน Chrome ถ้าหลุดจะล็อกอิน เลือกเซิร์ฟ เลือกตัวละคร และเปิดบอทของเกมให้ใหม่ รองรับหลายไอดี | "เกมหลุดบ่อย ช่วยตั้งค่าตัวเฝ้าเกมให้หน่อย" (คู่มือ: `.claude/skills/game-auto-reconnect/examples/yulgang/README.md`) |
 
 ## วิธีติดตั้ง
 
@@ -28,6 +29,7 @@ cp -r Test-Skill/.claude/skills/* ~/.claude/skills/
 2. ไปที่ **Settings → Capabilities → Skills** แล้วอัปโหลด
 
 ## สิ่งที่ต้องมี
+- **`game-auto-reconnect`**: ต้องมี Windows หรือ Mac, Google Chrome, Python 3 และติดตั้งไลบรารีด้วยคำสั่ง `pip install -r .claude/skills/game-auto-reconnect/requirements.txt` สกิลนี้ทำงานบนเครื่องของคุณ ไม่ใช่บนคลาวด์
 - **`excel-auto-report`**: ต้องมี Python 3 และติดตั้งไลบรารีด้วยคำสั่ง `pip install pandas openpyxl`
 - **`thai-time-weather`**: ต้องมี Python 3 และต่ออินเทอร์เน็ตได้ (ดึงข้อมูลจาก api.open-meteo.com)
 

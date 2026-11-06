@@ -1,0 +1,83 @@
+# ===== ตัวเฝ้าเกม Yulgang (play.edensoft.net) 2 ไอดี =====
+# ⚠️ ไฟล์นี้เป็นโครงเริ่มต้น ต้องเก็บรูปต้นแบบจากเกมจริงก่อนใช้งาน (ดู README ในโฟลเดอร์นี้)
+# บรรทัดที่มี TODO = ยังต้องรู้ข้อมูลจากหน้าจอเกมจริง
+
+game_url: "https://play.edensoft.net"
+
+browser:
+  mode: launch                 # สคริปต์เปิด Chrome ให้เอง ไอดีละ 1 หน้าต่าง แยกโปรไฟล์
+  channel: chrome
+  profile_dir: chrome-profile  # -> chrome-profile-1, chrome-profile-2
+  # ขนาดพื้นที่เกม (ต้องเท่าเดิมตลอด รูปต้นแบบถึงจะตรง) ขนาดนี้วาง 2 จอซ้าย-ขวาบนจอ 1366 ได้พอดี
+  viewport: {width: 660, height: 500}
+
+templates_dir: templates
+match_threshold: 0.85
+color_tolerance: 20
+check_interval: 10             # ตรวจทุก 10 วินาที
+stagger_seconds: 20            # เปิดไอดีที่ 2 หลังไอดีแรก 20 วินาที (ไม่ล็อกอินพร้อมกัน)
+step_timeout: 60               # เกมโหลดช้า รอแต่ละขั้นได้สูงสุด 60 วินาที
+
+accounts:
+  - name: ID1
+    user: "${YG_USER1}"
+    pass: "${YG_PASS1}"
+    char_image: char_id1.png   # TODO: รูปตัวละครของไอดี 1 ในหน้าเลือกตัวละคร
+    window: {x: 0, y: 0}
+  - name: ID2
+    user: "${YG_USER2}"
+    pass: "${YG_PASS2}"
+    char_image: char_id2.png   # TODO: รูปตัวละครของไอดี 2
+    window: {x: 670, y: 0}
+
+# เจออย่างใดอย่างหนึ่ง = หลุด
+disconnect_when:
+  - image: login_label_id.png       # เห็นช่อง ID = กลับมาหน้าล็อกอินแล้ว
+  - image: dc_dialog.png            # TODO: หน้าต่างแจ้งหลุดการเชื่อมต่อ (ถ้ามี)
+
+# TODO: สัญลักษณ์ที่เห็นเฉพาะตอนบอทในเกมทำงาน (เช่น ปุ่มออโต้ที่สว่าง/ข้อความ "Auto")
+healthy_when:
+  - image: bot_on.png
+unhealthy_after: 3                  # ไม่เห็น 3 รอบติด (30 วินาที) = ถือว่าบอทหยุด
+
+recovery_steps:
+  - name: ปิดหน้าต่างแจ้งหลุด (ถ้ามี)
+    click_image: dc_ok.png          # TODO
+    optional: true
+    timeout: 5
+  - name: โหลดหน้าเกมใหม่
+    goto: game_url
+    after: 5
+  - name: คลิกช่อง ID
+    click_image: login_label_id.png
+    offset: [0, 22]                 # ช่องกรอกอยู่ใต้คำว่า ID (ปรับตามจริง)
+  - name: พิมพ์ ID
+    type: "{{user}}"
+  - name: คลิกช่อง PASSWORD
+    click_image: login_label_password.png
+    offset: [0, 22]
+  - name: พิมพ์รหัสผ่าน
+    type: "{{pass}}"
+  - name: กดตกลง
+    click_image: login_btn_ok.png
+    after: 5
+  - name: เลือกเซิร์ฟ
+    click_image: server.png         # TODO
+    after: 3
+  - name: เลือกตัวละครของไอดีนี้
+    click_image: "{{char_image}}"
+  - name: กดเข้าเกม
+    click_image: btn_enter_game.png # TODO
+    after: 15                       # รอโหลดแผนที่
+  - name: เปิดบอทในเกม
+    click_image: bot_off.png        # TODO หรือใช้ปุ่มลัด เช่น  press: "F10"
+    skip_if_image: bot_on.png       # เปิดอยู่แล้วอย่ากดซ้ำ (กดซ้ำ = ปิด)
+  - name: ยืนยันว่าบอททำงาน
+    wait_image: bot_on.png
+
+limits:
+  max_attempts_in_a_row: 5
+  retry_wait: 60
+  max_recoveries_per_hour: 6        # ไม่ล็อกอินถี่เกินไป
+
+log_file: reconnect.log

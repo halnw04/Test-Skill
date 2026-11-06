@@ -1,0 +1,57 @@
+# config สำหรับเกมจำลอง (index.html ในโฟลเดอร์นี้) ใช้ฝึกและทดสอบ
+# รัน:  set GAME_USER=test  &  set GAME_PASS=1234   (Windows)
+#       python ../../scripts/reconnect_bot.py run -c config.yaml
+
+# เปิดไฟล์เกมจำลองด้วย URL แบบ file:// (เปลี่ยนเป็นที่อยู่จริงในเครื่องคุณ) ?dc=30 = หลุดทุก 30 วินาที
+game_url: "file:///C:/Test-Skill/.claude/skills/game-auto-reconnect/examples/mock-game/index.html?dc=30"
+
+browser:
+  mode: launch            # launch = ให้สคริปต์เปิด Chrome เอง | cdp = ต่อกับ Chrome ที่เปิดอยู่
+  channel: chrome         # ใช้ Google Chrome ที่ติดตั้งในเครื่อง
+  profile_dir: chrome-profile
+  viewport: {width: 1280, height: 800}
+
+templates_dir: templates
+match_threshold: 0.85     # รูปร่างต้องตรงอย่างน้อย 85%
+color_tolerance: 20       # สีต้องต่างไม่เกิน 20 (0-255)
+check_interval: 5         # ตรวจทุกกี่วินาที
+
+# ถ้าเจออย่างใดอย่างหนึ่ง = หลุด
+disconnect_when:
+  - image: disconnected.png
+  - text: "เข้าสู่ระบบ"   # เห็นหน้าล็อกอิน = ไม่ได้อยู่ในเกม
+
+# ต้องเห็นสิ่งนี้เสมอเมื่อบอททำงาน ถ้าไม่เห็นติดกัน unhealthy_after รอบ = กู้คืน
+healthy_when:
+  - image: auto_on_label.png
+unhealthy_after: 2
+
+# ขั้นตอนกู้คืน (ทำตามลำดับ)
+recovery_steps:
+  - name: โหลดหน้าเกมใหม่
+    goto: game_url
+  - name: ใส่ชื่อผู้ใช้
+    fill: {selector: "#user", text: "${GAME_USER}"}
+  - name: ใส่รหัสผ่าน
+    fill: {selector: "#pass", text: "${GAME_PASS}"}
+  - name: กดเข้าสู่ระบบ
+    click_selector: "#login button"
+  - name: เลือกเซิร์ฟ 1
+    click_image: server1.png
+  - name: เลือกตัวละคร BLADE
+    click_image: char_blade.png
+  - name: กดเริ่มเกม
+    click_image: btn_start.png
+    after: 3                # รอโหลดแผนที่ 3 วินาที
+  - name: เปิดบอท AUTO
+    click_image: btn_auto_off.png
+    skip_if_image: auto_on_label.png   # ถ้าเปิดอยู่แล้วอย่ากด (กดซ้ำ = ปิด)
+  - name: ยืนยันว่าบอททำงาน
+    wait_image: auto_on_label.png
+
+limits:
+  max_attempts_in_a_row: 5     # ลองกู้คืนติดกันได้กี่ครั้งก่อนยอมแพ้
+  retry_wait: 30               # รอก่อนลองใหม่ (เพิ่มเป็น 2 เท่าทุกครั้ง สูงสุด 10 นาที)
+  max_recoveries_per_hour: 10  # กันการล็อกอินถี่เกินไป
+
+log_file: reconnect.log

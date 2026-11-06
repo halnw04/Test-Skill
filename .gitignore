@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 *_รายงาน.xlsx
+chrome-profile*/
+logs/
+shots/
+*.log

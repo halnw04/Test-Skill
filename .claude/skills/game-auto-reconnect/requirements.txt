@@ -1,0 +1,4 @@
+playwright>=1.40
+opencv-python>=4.8
+numpy
+pyyaml

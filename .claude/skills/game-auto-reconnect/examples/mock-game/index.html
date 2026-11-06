@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>เกมจำลอง (ทดสอบตัวเฝ้าเกม)</title>
+<style>
+  html, body { margin: 0; background: #111; color: #eee; font-family: sans-serif; }
+  #login { width: 320px; margin: 120px auto; padding: 24px; background: #222; border-radius: 8px; }
+  #login input { display: block; width: 100%; box-sizing: border-box; margin: 8px 0; padding: 8px; }
+  #login button { width: 100%; padding: 10px; background: #c33; color: #fff; border: 0; font-size: 16px; }
+  #err { color: #f66; min-height: 1em; }
+  canvas { display: none; }
+</style>
+</head>
+<body>
+<!--
+  เกมจำลองสำหรับฝึกตั้งค่าและทดสอบ reconnect_bot.py
+  - ล็อกอิน: test/1234, test1/1111, test2/2222
+    แบบฟอร์ม HTML (ค่าเริ่มต้น) หรือ ?canvaslogin=1 = ช่อง ID/PASSWORD วาดในเกม (แบบ Yulgang)
+  - เลือกเซิร์ฟ, เลือกตัวละคร, ปุ่ม AUTO: วาดบน canvas เหมือนเกมจริง (ต้องใช้รูปต้นแบบ)
+  - หลุดเซิร์ฟอัตโนมัติทุก ?dc=วินาที (ค่าเริ่มต้น 20) หลังเข้าเกม
+-->
+<form id="login" onsubmit="return doLogin()">
+  <h2>เข้าสู่ระบบ</h2>
+  <input id="user" placeholder="ชื่อผู้ใช้" autocomplete="off">
+  <input id="pass" type="password" placeholder="รหัสผ่าน">
+  <div id="err"></div>
+  <button type="submit">เข้าสู่ระบบ</button>
+</form>
+<canvas id="c" width="1280" height="800"></canvas>
+<script>
+const params = new URLSearchParams(location.search);
+const DC_AFTER = Number(params.get('dc') || 20) * 1000;
+const CANVAS_LOGIN = params.get('canvaslogin') === '1';
+const USERS = { test: '1234', test1: '1111', test2: '2222' };
+const S = window.__state = { screen: 'login', user: null, server: null, char: null, auto: false, logins: 0, disconnects: 0 };
+const F = { id: '', pw: '', focus: null, err: '' };
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+let buttons = [], dcTimer = null, t = 0;
+
+function doLogin() {
+  const u = document.getElementById('user').value, p = document.getElementById('pass').value;
+  if (USERS[u] !== p) { document.getElementById('err').textContent = 'ชื่อผู้ใช้หรือรหัสผ่านผิด'; return false; }
+  S.user = u; S.logins++; go('server'); return false;
+}
+function go(screen) {
+  if (screen === 'login' && CANVAS_LOGIN) { screen = 'clogin'; F.id = F.pw = F.err = ''; F.focus = null; }
+  S.screen = screen;
+  document.getElementById('login').style.display = screen === 'login' ? 'block' : 'none';
+  cv.style.display = screen === 'login' ? 'none' : 'block';
+  if (screen === 'login') { document.getElementById('pass').value = ''; document.getElementById('err').textContent = ''; }
+  if (screen === 'game') { clearTimeout(dcTimer); dcTimer = setTimeout(disconnect, DC_AFTER); }
+}
+function disconnect() { S.disconnects++; S.auto = false; go('dc'); }
+
+function btn(x, y, w, h, label, color, onClick) {
+  g.fillStyle = color; g.fillRect(x, y, w, h);
+  g.strokeStyle = '#fff'; g.lineWidth = 3; g.strokeRect(x, y, w, h);
+  g.fillStyle = '#fff'; g.font = 'bold 26px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(label, x + w / 2, y + h / 2);
+  buttons.push({ x, y, w, h, onClick });
+}
+function draw() {
+  buttons = []; t++;
+  g.fillStyle = '#1b2a1b'; g.fillRect(0, 0, 1280, 800);
+  g.textAlign = 'center'; g.fillStyle = '#ffd54a'; g.font = 'bold 40px sans-serif';
+  if (S.screen === 'clogin') {
+    g.fillText('MOCK GANG', 640, 150);
+    g.fillStyle = '#3a2412'; g.fillRect(440, 260, 400, 330);
+    g.fillStyle = '#ffd54a'; g.font = 'bold 24px sans-serif'; g.fillText('ID', 640, 295);
+    g.fillText('PASSWORD', 640, 385);
+    const box = (y, val, key) => {
+      g.fillStyle = '#1a0f05'; g.fillRect(480, y, 320, 44);
+      g.strokeStyle = F.focus === key ? '#ffd54a' : '#7a5a2a'; g.lineWidth = 2; g.strokeRect(480, y, 320, 44);
+      g.fillStyle = '#fff'; g.font = '22px sans-serif'; g.textAlign = 'left'; g.fillText(val, 492, y + 23); g.textAlign = 'center';
+      buttons.push({ x: 480, y, w: 320, h: 44, onClick: () => { F.focus = key; } });
+    };
+    box(315, F.id, 'id'); box(405, '*'.repeat(F.pw.length), 'pw');
+    g.fillStyle = '#f66'; g.font = '18px sans-serif'; g.fillText(F.err, 640, 470);
+    btn(540, 500, 200, 60, 'LOGIN', '#a33', () => {
+      if (USERS[F.id] === F.pw) { S.user = F.id; S.logins++; go('server'); } else { F.err = 'wrong id/password'; F.pw = ''; }
+    });
+  } else if (S.screen === 'server') {
+    g.fillText('SELECT SERVER', 640, 150);
+    btn(440, 260, 400, 90, 'SERVER 1 - Dragon', '#2a5d9f', () => { S.server = 1; go('char'); });
+    btn(440, 380, 400, 90, 'SERVER 2 - Tiger', '#2a5d9f', () => { S.server = 2; go('char'); });
+  } else if (S.screen === 'char') {
+    g.fillText('SELECT CHARACTER', 640, 150);
+    btn(300, 250, 300, 300, 'BLADE Lv.85', '#6b2a9f', () => { S.char = 'blade'; });
+    btn(680, 250, 300, 300, 'MONK Lv.62', '#6b2a9f', () => { S.char = 'monk'; });
+    if (S.char) { g.strokeStyle = '#ffd54a'; g.lineWidth = 8; g.strokeRect(S.char === 'blade' ? 296 : 676, 246, 308, 308); }
+    btn(490, 600, 300, 80, 'START', '#2e8b57', () => { if (S.char) go('game'); });
+  } else if (S.screen === 'game' || S.screen === 'dc') {
+    // แผนที่ + ตัวละครเดินไปมา
+    for (let i = 0; i < 40; i++) { g.fillStyle = '#244024'; g.fillRect((i * 97) % 1280, (i * 53) % 700, 30, 30); }
+    const px = 640 + Math.sin(t / 20) * (S.auto ? 200 : 10);
+    g.fillStyle = '#e44'; g.beginPath(); g.arc(px, 400, 22, 0, 7); g.fill();
+    g.fillStyle = '#fff'; g.font = '20px sans-serif'; g.fillText(`${S.user} / ${S.char || ''} @ server ${S.server}`, 640, 40);
+    btn(1100, 680, 150, 80, 'AUTO', S.auto ? '#2e8b57' : '#555', () => { S.auto = !S.auto; });
+    if (S.auto) { g.fillStyle = '#3f3'; g.font = 'bold 28px sans-serif'; g.fillText('AUTO ON', 1175, 650); }
+    if (S.screen === 'dc') {
+      buttons = [];
+      g.fillStyle = 'rgba(0,0,0,.7)'; g.fillRect(0, 0, 1280, 800);
+      g.fillStyle = '#333'; g.fillRect(390, 280, 500, 240);
+      g.fillStyle = '#fff'; g.font = 'bold 30px sans-serif'; g.fillText('DISCONNECTED', 640, 340);
+      g.font = '22px sans-serif'; g.fillText('Lost connection to server', 640, 390);
+      btn(560, 430, 160, 60, 'OK', '#c33', () => go('login'));
+    }
+  }
+  requestAnimationFrame(draw);
+}
+window.addEventListener('keydown', e => {
+  if (S.screen !== 'clogin' || !F.focus) return;
+  if (e.key === 'Backspace') F[F.focus] = F[F.focus].slice(0, -1);
+  else if (e.key === 'Tab') { F.focus = F.focus === 'id' ? 'pw' : 'id'; e.preventDefault(); }
+  else if (e.key.length === 1) F[F.focus] += e.key;
+});
+cv.addEventListener('click', e => {
+  const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const b = buttons.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+  if (b) b.onClick();
+});
+go('login');
+draw();
+</script>
+</body>
+</html>
